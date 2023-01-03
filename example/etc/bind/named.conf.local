@@ -1,0 +1,14 @@
+...
+key "certbot-key" {
+	algorithm hmac-sha512;
+	secret "mMrpRENVlakYKHXXyygYrwvo+3sfzX9vIuk60PnL15vmqCWhxJwsVxLAJlAV47bu+sY13Xs7BuLoKVwcILzbCA==";
+
+zone "_acme-challenge.example.com" {
+    type master;
+    allow-query { any; };
+    file "/etc/bind/db._acme-challenge.example.com";
+    check-names ignore; // needed as the zone begins with an underscore
+    update-policy {
+        grant certbot-key. name _acme-challenge.example.com. txt;
+    };
+};
