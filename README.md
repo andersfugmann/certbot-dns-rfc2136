@@ -81,34 +81,9 @@ options {
 # };
 # End of named.conf
 ```
-
 From this info, we construct /etc/letsencrypt/rfc2136-credentials.ini
-```inifile
-# Target DNS server
-dns_rfc2136_server = 127.0.0.1
-# Target DNS port
-dns_rfc2136_port = 953
-# TSIG key name
-dns_rfc2136_name = certbot-key
-# TSIG key secret
-dns_rfc2136_secret = mMrpRENVlakYKHXXyygYrwvo+3sfzX9vIuk60PnL15vmqCWhxJwsVxLAJlAV47bu+sY13Xs7BuLoKVwcILzbCA==
-# TSIG key algorithm
-dns_rfc2136_algorithm = HMAC-SHA512
-# As we are using our own local server, assume that dns update are almost instant
-dns_rfc2136_propagation_time = 1
-
-
-```
+[`/etc/letsencrypt/rfc2136-credentials.ini`](https://github.com/andersfugmann/certbot-dns-rfc2136/blob/main/example/etc/letsencrypt/rfc2136-credentials.ini)
 
 ## Configure bind9
-In the following, the domain `example.com` is assumed to be configured
-in bind9 running locally.
-
-Copy the zone `db._acme-challenge.example.com` to `/etc/bind/`
-Add the following lines to `/etc/bind/named.conf.local`
-
-
-key "certbot-key" {
-  algorithm hmac-sha512;
-  secret "mMrpRENVlakYKHXXyygYrwvo+3sfzX9vIuk60PnL15vmqCWhxJwsVxLAJlAV47bu+sY13Xs7BuLoKVwcILzbCA==";
-};
+Based on the output from `rndc-confgen -A hmac-sha512 -k certbot` take
+a look at the files and snippets under `./example`.
