@@ -4,9 +4,10 @@ dns entries needed to verify certbot/letsencrypt certificates.
 
 ## Features
 * Handles `CNAME` records correctly
-* Uses dynamic updates using `nsupdate`
+* Uses dynamic updates using `nsupdate` (rfc 2136)
 * Batches updates (reduce number of serial changes)
-* Drop in replacement the RFC 2136 DNS plugin for Certbot
+* Drop in replacement the certbot `dns-rfc2136 plugin` 
+* Handles `CNAME` domain redirects (allows using a different zone for letsencrypt verification) 
 
 # Installation
 Copy the script `certbot-dns-rfc2136.sh` to `/usr/local/bin`
@@ -54,6 +55,8 @@ dns_rfc2136_propergation_time = <time in seconds for dns propergation>
 ```
 
 ### Example:
+In the following example, we want to verify ownership of the domain `example.com` to create/renew a certificate
+
 ```bash
 $ rndc-confgen -A hmac-sha512 -k certbot
 
@@ -61,29 +64,13 @@ key "certbot" {
 	algorithm hmac-sha512;
 	secret "mMrpRENVlakYKHXXyygYrwvo+3sfzX9vIuk60PnL15vmqCWhxJwsVxLAJlAV47bu+sY13Xs7BuLoKVwcILzbCA==";
 };
-
-options {
-	default-key "certbot-key";
-	default-server 127.0.0.1;
-	default-port 953;
-};
-# End of rndc.conf
-
-# Use with the following in named.conf, adjusting the allow list as needed:
-# key "certbot-key" {
-# 	algorithm hmac-sha512;
-# 	secret "mMrpRENVlakYKHXXyygYrwvo+3sfzX9vIuk60PnL15vmqCWhxJwsVxLAJlAV47bu+sY13Xs7BuLoKVwcILzbCA==";
-# };
-#
-# controls {
-# 	inet 127.0.0.1 port 953
-# 		allow { 127.0.0.1; } keys { "certbot-key"; };
-# };
-# End of named.conf
 ```
-From this info, we construct /etc/letsencrypt/rfc2136-credentials.ini
-[`/etc/letsencrypt/rfc2136-credentials.ini`](https://github.com/andersfugmann/certbot-dns-rfc2136/blob/main/example/etc/letsencrypt/rfc2136-credentials.ini)
+
+Based on this, we construct [`/etc/letsencrypt/rfc2136-credentials.ini`](https://github.com/andersfugmann/certbot-dns-rfc2136/blob/main/example/etc/letsencrypt/rfc2136-credentials.ini)
+
+And update the renew parameters in [`/etc/letsencrypt/renew/example.com`](https://github.com/andersfugmann/certbot-dns-rfc2136/blob/main/example/etc/letsencrypt/rfc2136-credentials.ini)
 
 ## Configure bind9
 Based on the output from `rndc-confgen -A hmac-sha512 -k certbot` take
-a look at the files and snippets under `./example`.
+a look at the files and snippets under [`./example`](https://github.com/andersfugmann/certbot-dns-rfc2136/blob/main/example), and [`./example/etc/bind`](https://github.com/andersfugmann/certbot-dns-rfc2136/blob/main/example/etc/bind) in particular.
+
