@@ -68,7 +68,7 @@ key "certbot" {
 
 Based on this, we construct [`/etc/letsencrypt/rfc2136-credentials.ini`](https://github.com/andersfugmann/certbot-dns-rfc2136/blob/main/example/etc/letsencrypt/rfc2136-credentials.ini)
 
-And update the renew parameters in [`/etc/letsencrypt/renew/example.com`](https://github.com/andersfugmann/certbot-dns-rfc2136/blob/main/example/etc/letsencrypt/rfc2136-credentials.ini)
+And update the renew parameters in [`/etc/letsencrypt/renew/example.com`](https://github.com/andersfugmann/certbot-dns-rfc2136/blob/main/exampleletsencrypt/renew/example.com)
 
 ## Configure bind9
 Based on the output from `rndc-confgen -A hmac-sha512 -k certbot` take
