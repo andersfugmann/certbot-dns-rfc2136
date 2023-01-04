@@ -3,14 +3,14 @@ This repository contains a helper script for dynamically updating
 dns entries needed to verify certbot/letsencrypt certificates using [`dns-01`](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge) challenges. 
 `Dns-01` challenges allow creation of wildcard letencrypt certificates.
 
-## Features
+# Features
 * Handles `CNAME` records correctly
 * Uses dynamic updates using `nsupdate` (rfc 2136)
 * Batches updates (reduce number of serial changes)
 * Drop in replacement the certbot `dns-rfc2136-plugin` 
 * Handles `CNAME` delegation (allows using a different zone for letsencrypt verification) 
 
-## TODO
+# TODO
 * Handle NS records for nameserver redirection
 
 # Installation
@@ -31,7 +31,7 @@ The following assumes you already installed certbot
 apt install certbot bind9-host bind9-dnsutils bash
 ```
 
-## Setup
+# Setup
 For the certificates you want to update using this plugin, update
 the configuration files in `/etc/letsencrypt/renewal` to contain the
 following entries under the section `renewalparams`
@@ -58,7 +58,7 @@ dns_rfc2136_algorithm = <key algorithm>
 dns_rfc2136_propergation_time = <time in seconds for dns propergation>
 ```
 
-### Example:
+## Example
 In the following example, we want to verify ownership of the domain `example.com` to create/renew a certificate
 
 First create a key to be used for dns updates:
