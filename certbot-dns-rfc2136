@@ -1,0 +1,111 @@
+#!/bin/bash
+set -euo pipefail
+
+## Program for certbot authenthication using DNS as specificed in rfc2136.
+## The program makes as few updates to the zone as possible to reduce
+## increments to the zone serial The program is intended to be used as
+## a manual hook for certbot to do authencication as a replacement for
+## the dns_rfc2136 plugin which does not handle redirections (CNAMES)
+## for authentication.
+##
+## Author: Anders Fugmann <anders .at. fugmann .dot. net>
+## License: MIT
+
+function usage() {
+    echo "use $0 [<-c|--config> <config file>] [-d] [--debug <debug file>] <auth|cleanup>"
+}
+
+function get_record () {
+    CHALLENGE_DOMAIN="$1"
+    DNS_SERVER="$2"
+    if [ -v dns_rfc2136_server ]; then
+        DNS_SERVER=${dns_rfc2136_server}
+        DNS_PORT=${dns_rfc2136_port}
+    else
+        read _ _ _ DNS_SERVER < <(host -t NS ${CHALLENGE_DOMAIN} ${DNS_SERVER} | tail -n 1)
+    fi
+    read _ _ _ _ _ CNAME < <(host -t CNAME ${CHALLENGE_DOMAIN} ${DNS_SERVER} | tail -n 1)
+    if [ -n "${CNAME}" ]; then
+	get_record ${CNAME%.} ${DNS_SERVER}
+    fi
+}
+
+DEBUG=false
+DEBUG_FILE=/tmp/certbot_dns_rfc2136.log
+CREDENTIALS_INI=/etc/letsencrypt/rfc2136-credentials.ini
+TTL=1
+
+while true; do
+    case "$1" in
+        -c|--config)
+            CREDENTIALS_INI="$2"
+            shift 2
+            ;;
+        -d)
+            DEBUG=true
+            ;;
+        --debug)
+            DEBUG=true
+            DEBUG_FILE="$2"
+            shift 2
+            ;;
+        --help)
+            usage $0
+            exit 0
+            ;;
+        auth)
+	    ACTION=add
+            break;
+	    ;;
+        cleanup)
+	    ACTION=delete
+            break
+            ;;
+        *)
+            echo "Unknown option '$1'"
+            exit 1
+            ;;
+    esac
+done
+declare -r DEBUG
+declare -r DEBUG_FILE
+declare -r ACTION
+declare -r CREDENTIALS_INI
+
+
+# Source credentials, but remove spaces around equal and quote values
+source <(cat ${CREDENTIALS_INI} | sed -E 's/([^ =]+)[ ]*=[ ]*(.*)/\1="\2"/' | grep -v '^#')
+get_record "_acme-challenge.${CERTBOT_DOMAIN}" ""
+
+declare -r DNS_SERVER
+declare -r DNS_PORT
+declare -r CHALLENGE_DOMAIN
+
+declare -r PARENT=$(ps -o ppid= -p $PPID)
+declare -r NSUPDATE_FILE="/tmp/certbot_dns_rfc2136.${ACTION}.${DNS_SERVER}.${PARENT/ /}.nsupdate"
+
+${DEBUG} && date >> "${DEBUG_FILE}"
+${DEBUG} && echo "dnsserver: '${DNS_SERVER}'" >> "${DEBUG_FILE}"
+${DEBUG} && echo "nsupdatefile: ${NSUPDATE_FILE}" >> "${DEBUG_FILE}"
+
+if [ ! -f ${NSUPDATE_FILE} ]; then
+    touch ${NSUPDATE_FILE}
+    chmod 600 ${NSUPDATE_FILE}
+    echo "server ${DNS_SERVER} ${DNS_PORT}" > ${NSUPDATE_FILE}
+fi
+
+echo "update ${ACTION} ${CHALLENGE_DOMAIN}. $TTL TXT ${CERTBOT_VALIDATION}" >> ${NSUPDATE_FILE}
+if [ "${CERTBOT_REMAINING_CHALLENGES}" = "0" ]; then
+    ## Need to send all files.
+    for FILE in /tmp/certbot_dns_rfc2136.*.${PARENT}.nsupdate; do
+        echo "send" >> ${FILE}
+        declare -r AUTH=${dns_rfc2136_algorithm}:${dns_rfc2136_name}:${dns_rfc2136_secret}
+        ${DEBUG} && echo nsupdate -y ${AUTH} ${FILE} >> "${DEBUG_FILE}"
+        nsupdate -y ${AUTH} ${FILE}
+        ${DEBUG} && mv ${FILE} ${FILE}.$(date +%s)
+        ${DEBUG} || rm -f ${FILE}
+    done
+    if [ "${ACTION}" = "update" ]; then
+        sleep ${dns_rfc2136_propagation_time-1}
+    fi
+fi
