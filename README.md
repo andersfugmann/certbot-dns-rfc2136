@@ -10,14 +10,11 @@ and insert needed TXT records in this domain (potentially served by a
 local version of bind).
 
 # Features
-* Handles `CNAME` records correctly
-* Uses dynamic updates using `nsupdate` (rfc 2136)
-* Batches updates (reduce number of serial changes)
 * Drop in replacement the certbot `dns-rfc2136-plugin`
-* Handles `CNAME` delegation (allows using a different zone for letsencrypt verification)
-
-# TODO
-* Handle NS records for nameserver redirection
+* Handles `CNAME` domain delegation (allows using a different zone for letsencrypt verification)
+* Uses dynamic updates using `nsupdate` (rfc 2136)
+* Batches dns updates to reduce number of serial changes
+* Follows `NS` DNS records unless nsupdate server is specified explicitly
 
 # Installation
 Copy the script `certbot-dns-rfc2136` to `/usr/local/bin`
